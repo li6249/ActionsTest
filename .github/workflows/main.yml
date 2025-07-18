@@ -1,68 +1,11 @@
-name: Robust Java Test Validation
-
-on: [push]
-
-jobs:
-  test-single-file:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: actions/setup-java@v3
-      with: { java-version: '17' }
-
-    - name: Find and compile tests
-      run: |
-        # 查找所有测试文件
-        shopt -s globstar
-        for test_file in src/test/java/​**​/*Test.java; do
-          if [ -f "$test_file" ]; then
-            echo "::group::Testing $test_file"
-            javac "$test_file" && java -cp src/test/java $(basename "$test_file" .java)
-            echo "::endgroup::"
-          fi
-        done
-        
-        if [ -z "$(find src/test/java -name '*Test.java')" ]; then
-          echo "::warning::No test files found in src/test/java/"
-        finame: Java Single Test Validation
-
-on: [push]  # 代码推送时触发
-
-jobs:
-  test-single-file:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4  # 必须步骤：获取代码
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'  # 推荐使用Eclipse Temurin JDK
-
-    - name: Validate test file existence
-      id: check-file
-      run: |
-        if [ ! -f "src/test/java/Test.java" ]; then
-          echo "::error::Test file not found at src/test/java/Test.java"
-          exit 1
-        else
-          echo "::notice::Test file found, proceeding..."
-        fi
-
-    - name: Compile test file
-      run: |
-        javac -d target/classes src/test/java/Test.java
-        if [ $? -ne 0 ]; then
-          echo "::error::Compilation failed"
-          exit 1
-        fi
-
-    - name: Run the test
-      run: |
-        # 假设测试类包含main方法
-        java -cp target/classes Test
-        # 如果是JUnit测试则改用：
-        # java -cp target/classes:path/to/junit.jar org.junit.runner.JUnitCore Test
+- name: Validate test file
+  run: |
+    # 改为递归查找测试文件
+    TEST_FILE=$(find src/test/java -name "*Test.java" | head -n 1)
+    if [ -z "$TEST_FILE" ]; then
+      echo "::error::No test file found in src/test/java/"
+      exit 1
+    else
+      echo "Found test file: $TEST_FILE"
+      javac $TEST_FILE
+    fi
