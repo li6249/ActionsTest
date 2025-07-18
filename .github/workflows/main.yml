@@ -1,39 +1,20 @@
-name: Auto-Merge to Main
+name: Safe Auto-Merge
 
 on:
-  push:
-    branches-ignore: 
-      - 'main'  # 排除main分支本身的推送
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 jobs:
-  merge-to-main:
+  merge-on-pr-close:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    # 必须添加权限声明
     permissions:
       contents: write
-      pull-requests: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 获取完整git历史
-
-      - name: Merge to main
-        run: |
-          # 设置git身份
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          
-          # 尝试合并（使用--no-ff保留合并提交）
-          git fetch origin main
-          git checkout main
-          git merge --no-ff ${{ github.ref_name }} -m "Auto-merge from ${{ github.ref_name }}"
-          
-          # 处理可能的冲突
-          if git push origin main; then
-            echo "Merge succeeded"
-          else
-            echo "::error::Merge conflict detected"
-            exit 1
-          fi
+      - uses: actions/checkout@v4
+      - run: |
+          git checkout ${{ github.event.pull_request.head.ref }}
+          git merge --no-ff main
+          git push origin ${{ github.event.pull_request.head.ref }}
