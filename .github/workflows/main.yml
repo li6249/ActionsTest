@@ -1,21 +1,41 @@
-name: Read and Display File
+name: Java Single Test Validation
 
-on: [push]  # 触发条件：代码推送时运行（与原图一致）
+on: [push]  # 代码推送时触发
 
 jobs:
-  display-file:
-    runs-on: ubuntu-latest  # 使用最新Ubuntu环境（与原图一致）
-    
+  test-single-file:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4  # 必须先检出代码才能访问文件
-        
-      - name: Display test.txt
-        run: |
-          if [ -f "doc/test.txt" ]; then
-            echo "文件内容："
-            cat doc/test.txt  # 输出文件内容
-          else
-            echo "::error::文件 doc/test.txt 不存在"
-            exit 1  # 如果文件不存在则报错退出
-          fi
+    - name: Checkout code
+      uses: actions/checkout@v4  # 必须步骤：获取代码
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'  # 推荐使用Eclipse Temurin JDK
+
+    - name: Validate test file existence
+      id: check-file
+      run: |
+        if [ ! -f "src/test/java/Test.java" ]; then
+          echo "::error::Test file not found at src/test/java/Test.java"
+          exit 1
+        else
+          echo "::notice::Test file found, proceeding..."
+        fi
+
+    - name: Compile test file
+      run: |
+        javac -d target/classes src/test/java/Test.java
+        if [ $? -ne 0 ]; then
+          echo "::error::Compilation failed"
+          exit 1
+        fi
+
+    - name: Run the test
+      run: |
+        # 假设测试类包含main方法
+        java -cp target/classes Test
+        # 如果是JUnit测试则改用：
+        # java -cp target/classes:path/to/junit.jar org.junit.runner.JUnitCore Test
